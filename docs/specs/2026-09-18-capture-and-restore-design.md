@@ -18,10 +18,12 @@ must work when no incremental backup is available.
 ## Scope
 
 **In:** MacPorts ports, conda environments, VS Code extensions, the six
-toolchain applications no package manager owns, and an allowlisted set of
-dotfiles.
+toolchain applications no package manager owns, three git-cloned
+configuration directories, and an allowlisted set of dotfiles.
 
-**Out:** Application data, documents, secrets of any kind, open-source
+**Out:** Personal configuration, which lives in the private companion
+repository `esba1ley/claude-user-settings` and is cloned rather than copied.
+Also application data, documents, secrets of any kind, open-source
 applications outside the build toolchain (Blender, FreeCAD, GIMP, Inkscape,
 OBS, Firefox, Raspberry Pi Imager), and all commercial software. These get a
 single line in `RESTORE.md` noting they are installed separately; no versions
@@ -53,6 +55,12 @@ because the reasoning matters more than the outcome.
    `RESTORE.md`. Rejected: `age`/`git-crypt` encryption, and a private vault
    repository.
 
+   This does **not** conflict with the private companion repository in decision
+   5. What was rejected is a private repo holding *secrets*, which is circular:
+   reaching it needs the SSH key it contains. A private repo holding personal
+   but non-secret configuration is reached *after* keys are restored by hand,
+   so the chain has a manual root rather than a cycle.
+
 3. **Copy-in, not symlinks.** `bin/capture-dotfiles` copies allowlisted files
    into the repository; you review the diff before committing. This puts an
    explicit gate between a live config and a world-readable repository, which
@@ -69,7 +77,18 @@ because the reasoning matters more than the outcome.
    a public repository and dilute the open-source story; and a narrower
    toolchain list that omitted VS Code.
 
-## Architecture: four ownership classes
+5. **Personal configuration lives in a private companion repository**, not in
+   this one. `~/.claude` is already a clone of
+   `git@github.com:esba1ley/claude-user-settings.git` (private, branch
+   `develop`), carrying `CLAUDE.md` and `rules/`. Those files hold name,
+   employer, job title, education and personal inventory — no credential
+   pattern in them, so a secret scanner passes them straight through. The
+   protection against publishing personal data is **repository separation, not
+   scanning**; a scanner cannot detect "this is personal." Rejected: copying
+   them into this public repository behind the secret scan, which is what an
+   earlier draft of this design did.
+
+## Architecture: five ownership classes
 
 The inventory is split by *who owns the install*, because that determines
 whether restore can be scripted at all.
@@ -80,6 +99,7 @@ whether restore can be scripted at all.
 | Environment-managed | 8 conda environments | `conda env export --from-history` | `conda env create` |
 | App-managed | 62 VS Code extensions | `code --list-extensions` | install loop |
 | Vendor-installed | 6 toolchain applications | version + source only | documented checklist |
+| Repo-managed | 3 git clones | URL, branch, destination | `git clone` |
 
 Two of these capture commands share a principle worth stating plainly:
 `installed requested` and `--from-history` both record **what was asked for**,
@@ -109,25 +129,50 @@ updaters, so their versions move without `port outdated` ever mentioning it.
 That property is sub-project B's problem, but `vendors.yml` is where B will
 look, so it is captured here.
 
+### Repo-managed configuration
+
+Three directories are not files to copy but git clones to reproduce:
+
+| Destination | Origin | Access |
+|---|---|---|
+| `~/.oh-my-zsh` | `ohmyzsh/ohmyzsh` | public, HTTPS |
+| `~/.oh-my-zsh/custom/themes/powerlevel10k` | `romkatv/powerlevel10k` | public, HTTPS |
+| `~/.claude` | `esba1ley/claude-user-settings` | **private, SSH** |
+
+Capture for this class is near-trivial — record URL, branch, destination — and
+restore is a clone. The content is already versioned in its own repository, so
+duplicating it here would create two sources of truth for the same files.
+
+Two practical constraints:
+
+- The private clone needs SSH keys, which are a manual restore step. This is
+  why manual prerequisites move earlier in the restore order than they would
+  otherwise sit.
+- `~/.claude` may already exist and be non-empty when restore runs, because
+  Claude Code creates it on first launch. `git clone` refuses a non-empty
+  destination, so `restore-repos` uses `git init` + `remote add` + `fetch` +
+  `checkout -f <branch>` instead, which is also the idempotent form: re-running
+  it against an existing clone is a fetch and a no-op checkout.
+
 ## Repository layout
 
 ```
 bin/
   capture              runs every capture-* in order
   capture-ports        capture-conda      capture-vscode
-  capture-vendors      capture-dotfiles
+  capture-vendors      capture-dotfiles   capture-repos
   restore-ports        restore-conda      restore-vscode
-  restore-dotfiles
+  restore-dotfiles     restore-repos
   check-drift          capture to temp, diff against repo, report
 manifests/
   ports.txt
   conda/<env>.yml
   vscode-extensions.txt
   vendors.yml
+  repos.yml
 dotfiles/
   allowlist.yml
   zshrc  p10k.zsh  condarc  gitconfig  emacs
-  claude/CLAUDE.md  claude/rules/
 docs/
   RESTORE.md           running order, Apple-gated steps, manual items
   CAPTURE.md           how to add something to the allowlist
@@ -136,9 +181,10 @@ test/
   *.bats
 ```
 
-`dotfiles/claude/` deliberately avoids colliding with the repository's own
-`.claude/`, which holds `ARCHITECTURE.md`, `DECISIONS.md`, `JOURNAL.md`, and
-`CLAUDE.md` and is not captured state.
+There is no `dotfiles/claude/`. `~/.claude` is repo-managed (see above) and
+never copied here. This repository's own `.claude/` holds `ARCHITECTURE.md`,
+`DECISIONS.md`, `JOURNAL.md`, and `CLAUDE.md`, and is authored content rather
+than captured state.
 
 ## Data formats
 
@@ -171,6 +217,19 @@ line.
   self_updates: true
 ```
 
+`manifests/repos.yml`:
+
+```yaml
+- dest: ~/.oh-my-zsh
+  url: https://github.com/ohmyzsh/ohmyzsh.git
+  branch: master
+  private: false
+- dest: ~/.claude
+  url: git@github.com:esba1ley/claude-user-settings.git
+  branch: develop
+  private: true          # needs SSH keys; see restore ordering
+```
+
 `dotfiles/allowlist.yml`:
 
 ```yaml
@@ -179,10 +238,11 @@ line.
 - src: ~/.p10k.zsh
   dest: dotfiles/p10k.zsh
   note: regenerated wholesale by `p10k configure`
-- src: ~/.claude/rules/
-  dest: dotfiles/claude/rules/
-  recursive: true
+- src: ~/.condarc
+  dest: dotfiles/condarc
 ```
+
+`~/.claude` appears nowhere in this file. It is repo-managed.
 
 Entries are opt-in only. A new file in `$HOME` is never captured until it is
 added here by hand.
@@ -212,9 +272,21 @@ any existing file to `~/.config-backup/<ISO-8601 timestamp>/` first. Requires no
 prerequisite and could technically run first on a bare machine, but
 `RESTORE.md` orders it last; see Restore ordering for why.
 
+**`capture-repos`** — records URL, branch, and destination for each managed
+clone. Does not copy their contents.
+
+**`restore-repos`** — reproduces each clone via `git init` / `remote add` /
+`fetch` / `checkout -f`, tolerating a destination that already exists. Public
+clones need no credentials; the private one fails fast with a clear message if
+SSH authentication is not yet available, naming the manual step that fixes it.
+
 **`check-drift`** — runs every `capture-*` into a temporary directory and diffs
-against the committed manifests. Reports differences and exits non-zero if any
-are found. This is the component sub-project B will call weekly.
+against the committed manifests. For repo-managed clones it reports instead
+whether the working tree is dirty or the branch has diverged from its origin —
+a dirty `~/.claude` means personal configuration has been edited but not pushed
+to its own repository, which is exactly the drift worth catching weekly.
+Reports differences and exits non-zero if any are found. This is the component
+sub-project B will call weekly.
 
 **`capture`** — runs each `capture-*` in order. Convenience only; no logic of
 its own.
@@ -239,14 +311,21 @@ while a missed secret costs a rotation.
 
 ### Never captured
 
-`~/.ssh/*`, credentials and API tokens of any kind, and the machine-local and
-historical contents of `~/.claude` — `sessions/`, `history.jsonl`, `projects/`,
-`cache/`, `daemon*`, `file-history/`. These are history, not configuration, and
-have no restore value. `RESTORE.md` lists what must be supplied by hand.
+`~/.ssh/*` and credentials or API tokens of any kind. These are restored by
+hand from a password manager; `RESTORE.md` lists them.
 
-Note that `~/.oh-my-zsh/custom/` holds no user-authored content — only Oh My
-Zsh's shipped examples and the powerlevel10k theme, which is a git clone and is
-restored by re-cloning. It is therefore not in the allowlist.
+### Captured elsewhere, deliberately
+
+`~/.claude` is repo-managed: its configuration — `CLAUDE.md` and `rules/` —
+lives in the private companion repository, not here. Its machine-local and
+historical contents (`sessions/`, `history.jsonl`, `projects/`, `cache/`,
+`daemon*`, `file-history/`) are neither captured nor cloned; they are history
+rather than configuration, and that repository's own `.gitignore` already
+excludes them.
+
+`~/.oh-my-zsh/custom/` holds no user-authored content — only Oh My Zsh's
+shipped examples and the powerlevel10k clone — so it needs no allowlist entry.
+The repo-managed class reproduces both.
 
 ## Restore ordering
 
@@ -254,17 +333,26 @@ restored by re-cloning. It is therefore not in the allowlist.
 requiring a human:
 
 1. macOS itself; sign in.
-2. Xcode from the App Store; accept the licence; install Command Line Tools.
-3. MacPorts, then `restore-ports`.
-4. miniforge, then `restore-conda`.
-5. Visual Studio Code, then `restore-vscode`.
-6. MacTeX, Dakota, Docker Desktop — per `vendors.yml`.
-7. `restore-dotfiles` — last, deliberately. Installers earlier in this list
+2. **Manual prerequisites: SSH keys from the password manager**, plus
+   credentials and licences. These move early — earlier than an unthinking
+   ordering would put them — because the private companion repository in step 8
+   cannot be cloned without them.
+3. Xcode from the App Store; accept the licence; install Command Line Tools.
+4. MacPorts, then `restore-ports`.
+5. miniforge, then `restore-conda`.
+6. Visual Studio Code, then `restore-vscode`.
+7. MacTeX, Dakota, Docker Desktop — per `vendors.yml`.
+8. `restore-repos` — Oh My Zsh, powerlevel10k, and `~/.claude`. Must precede
+   the next step: the captured `~/.zshrc` sets `ZSH_THEME` and sources Oh My
+   Zsh, so restoring it onto a machine without those clones yields a shell that
+   errors on every start.
+9. `restore-dotfiles` — last, deliberately. Installers earlier in this list
    write into the very files it restores: miniforge's `conda init` appends a
    block to `~/.zshrc`, and the captured `~/.zshrc` already contains that block.
    Restoring dotfiles last makes the captured file authoritative and avoids a
    duplicated block.
-8. Manual items: SSH keys, credentials, licences.
+10. Verification: `bin/check-drift` should report no drift against the
+    manifests.
 
 ## Testing
 
@@ -281,6 +369,9 @@ testing is the correct granularity regardless.
   diff against the original.
 - **Restore scripts:** `--dry-run` assertions, and an idempotency test that runs
   the script twice and asserts the second run changes nothing.
+- **`restore-repos`:** tested against a destination that already exists and is
+  non-empty, since that is the real case for `~/.claude`; and for idempotency,
+  where the second run must fetch and change nothing.
 - **Secret scan:** fixture files containing planted synthetic secrets must be
   refused; clean fixtures must pass.
 - **In-script verification** (prerequisite and post-condition checks) is plain
@@ -318,3 +409,6 @@ reason to carry two frameworks, rather than by bootstrap phase.
    without asking a question, and the document is honest about which steps a
    human must perform.
 5. No secret, key, or credential appears anywhere in the repository history.
+6. No personal configuration appears in this repository at all: `CLAUDE.md` and
+   `rules/` are reachable only through the private companion repository, and
+   `git log -p` over this repository's history contains neither.
