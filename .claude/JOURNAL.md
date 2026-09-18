@@ -30,8 +30,8 @@ Work performed, newest first. Rationale belongs in `DECISIONS.md`.
   `/opt/local/bin` mean a bare `clang` resolves to MacPorts 21.1.8, not Apple
   clang 21.0.0.
 - Published to a public GitHub remote, `esba1ley/macOS-setup`, tagging the
-  baseline commit `v0.0.0`; reviewed the content for export-controlled subject
-  matter and found none.
+  initial commit `v0.0.0` as a spike of the configuration as found; reviewed
+  the content for export-controlled subject matter and found none.
 
 **Next:** cut the first release on `main` once there is something substantive
 to version. What gets captured as data — port manifest, conda env exports,

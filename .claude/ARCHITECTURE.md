@@ -112,7 +112,8 @@ breaks when they do not.
 **Status:** Frozen
 
 GitFlow: `main` carries tagged releases only, `develop` is the working trunk.
-The baseline commit is tagged `v0.0.0`. Remote `origin` is
+The initial commit is tagged `v0.0.0` — a spike of the configuration as
+found, not a release. Remote `origin` is
 `git@github.com:esba1ley/macOS-setup.git`. No commit signing or DCO sign-off
 is configured, and no commit carries either.
 
