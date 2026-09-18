@@ -35,7 +35,7 @@ at `/pkg/env/global/bin` and `/opt/podman/bin`, neither of which exists.
 ## Package Manager Isolation
 **Status:** Frozen
 
-Five software sources coexist, each in its own prefix. Two deliberate
+Six software sources coexist, each in its own prefix. Two deliberate
 exceptions aside — the C/C++ toolchain and Dakota's Python tree, both below —
 none shadows another:
 
@@ -46,6 +46,7 @@ none shadows another:
 | miniforge3 | `~/miniforge3` | All Python environments |
 | MacTeX | `/Library/TeX` | The entire TeX toolchain |
 | Dakota | `/opt/dakota` | Self-contained, vendor-shipped |
+| Docker Desktop | `/Applications/Docker.app` | Container runtime and `docker` CLI |
 
 Full Xcode is installed, not merely the Command Line Tools, and
 `xcode-select -p` points at `/Applications/Xcode.app/Contents/Developer`. Its
@@ -99,6 +100,19 @@ Dakota injects its own Python package tree onto `PYTHONPATH`
 (`share/dakota/Python`, providing `dakota` and `muq`). This crosses the
 otherwise clean miniforge boundary and is one of the two deliberate exceptions
 to the isolation above.
+
+## Containers
+**Status:** Frozen
+
+Docker Desktop (currently 4.90.0, engine 29.7.2) is the container runtime,
+with `desktop-linux` as the active context and its socket under
+`~/.docker/run`. Images are built to stay Apptainer-compatible so work
+developed here can deploy to Linux scientific-computing hosts.
+
+Unlike every other source above, Docker Desktop updates *itself* through its
+own GUI updater rather than through a package manager. It therefore has to be
+watched separately — and its version can move without anything in this
+repository noticing.
 
 ## TeX Toolchain
 **Status:** Frozen
