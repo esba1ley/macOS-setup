@@ -4,6 +4,24 @@ Why the machine and this repository are arranged as they are. Newest first.
 Entries dated before this file existed were reconstructed from the live
 configuration and are marked as such.
 
+## 2026-09-18 — Tag the baseline `v0.0.0` and publish publicly
+**Status:** Accepted
+**Context:** GitFlow requires every commit on `main` to carry a semantic
+version tag, but the initial commit is documentation with no captured
+configuration in it — nothing that deserves to be called a feature release.
+Deferring the tag (the entry below) left `main` knowingly out of compliance.
+**Decision:** Tag the baseline commit `v0.0.0`, which satisfies the tagging
+rule without claiming a release, and publish `main` and `develop` to a public
+GitHub remote at `esba1ley/macOS-setup`.
+**Consequences:** `main` is compliant from its first commit, and releases
+advance from `0.0.0` under `bump2version` once there is captured configuration
+to version. Public visibility makes the repository a readable inventory of
+this machine — local paths, installed software and versions, environment
+names — so each commit needs that glance before it goes out; the 2026-09-18
+review found no export-controlled subject matter. Rejected: `v0.1.0`, which
+would name a release containing no captured configuration; and a private
+remote, which the public one forecloses without a history rewrite.
+
 ## 2026-09-18 — Compile with Apple clang, analyze with MacPorts LLVM
 **Status:** Accepted (recorded retroactively)
 **Context:** Apple's clang is the build the platform expects — integrated with
@@ -22,7 +40,8 @@ as the compiler too, which drifts from the SDK Apple ships; and doing without
 `clang-tidy`, which the coding conventions require.
 
 ## 2026-09-18 — Adopt GitFlow branches, defer semantic versioning
-**Status:** Accepted
+**Status:** Superseded by 2026-09-18 — Tag the baseline `v0.0.0` and publish
+publicly
 **Context:** The standing convention is GitFlow — `main` carrying only tagged
 releases, `develop` as the trunk — and every commit on `main` carrying a
 semantic version tag. The first commit here is documentation, with nothing yet

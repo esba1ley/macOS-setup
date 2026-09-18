@@ -109,12 +109,15 @@ which is the invariant that matters — see `DECISIONS.md` (2026-08-20) for what
 breaks when they do not.
 
 ## Version Control
-**Status:** Open
+**Status:** Frozen
 
-Git repository initialized 2026-09-18 on `main`, no commits yet, no remote,
-and no commit signing or DCO sign-off configured.
+GitFlow: `main` carries tagged releases only, `develop` is the working trunk.
+The baseline commit is tagged `v0.0.0`. Remote `origin` is
+`git@github.com:esba1ley/macOS-setup.git`. No commit signing or DCO sign-off
+is configured, and no commit carries either.
 
-Unresolved: whether the repository gains a remote and whether that remote is
-public — the content is personal machine configuration, but it does enumerate
-installed software, local paths, and project names; and whether a docs-only
-repository warrants the full GitFlow trunk structure.
+**The remote is public.** Everything committed here is world-readable, and
+these documents enumerate local paths, installed software with versions, and
+environment names. Reviewed 2026-09-18 and found to contain no
+export-controlled subject matter; re-check that before committing captured
+configuration, which is a good deal more revealing than prose about it.

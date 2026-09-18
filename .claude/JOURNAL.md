@@ -20,20 +20,21 @@ Work performed, newest first. Rationale belongs in `DECISIONS.md`.
 - Found two stale `/etc/paths.d` fragments — `10-pmk-global` and
   `podman-pkg` — pointing at `/pkg/env/global/bin` and `/opt/podman/bin`,
   neither of which exists.
-
-- Repository initialized on `main` (no remote); `README.md` added.
-- Added `.gitignore` covering macOS and editor detritus.
+- Repository initialized on `main`; `README.md` added, plus a `.gitignore`
+  covering macOS and editor detritus.
 - Made the initial commit on `main` and branched `develop` from it as the
-  working trunk; left `main` untagged for now — see `DECISIONS.md`.
-
+  working trunk, initially leaving `main` untagged.
 - Added Xcode as a fifth managed source and recorded the C/C++ toolchain
   split: Apple clang for compiling, MacPorts LLVM for `clang-tidy` and the
   other analysis tools. Noted that `port select` symlinks in the prepended
   `/opt/local/bin` mean a bare `clang` resolves to MacPorts 21.1.8, not Apple
   clang 21.0.0.
+- Published to a public GitHub remote, `esba1ley/macOS-setup`, tagging the
+  baseline commit `v0.0.0`; reviewed the content for export-controlled subject
+  matter and found none.
 
-**Next:** tag the first release on `main` once there is something substantive
-to version. Then decide what gets captured as data (port manifest, conda
-env exports, `~/.zshrc`, `~/.claude`) and whether the repository gains a
-remote — the two Open aspects in `ARCHITECTURE.md`. The stale `paths.d`
-fragments are removable once their origin is confirmed.
+**Next:** cut the first release on `main` once there is something substantive
+to version. What gets captured as data — port manifest, conda env exports,
+`~/.zshrc`, `~/.claude` — is the one aspect still Open in `ARCHITECTURE.md`,
+and the one that most needs a public-visibility glance before it lands. The
+stale `paths.d` fragments are removable once their origin is confirmed.
