@@ -1,0 +1,33 @@
+# JOURNAL.md
+
+Work performed, newest first. Rationale belongs in `DECISIONS.md`.
+
+## 2026-09-18 — Establish repository documentation
+
+- Rewrote `.claude/CLAUDE.md` around the host's actual integration points
+  rather than a flat list of tools: the two-layer `PATH` construction, the
+  `~/.zshrc` line references where each manager enters the environment, and
+  the inspection commands that regenerate every fact in it.
+- Added `.claude/ARCHITECTURE.md`, `.claude/DECISIONS.md`, and this file, per
+  the repository documentation convention.
+- Reconstructed the host arrangement by inspection — MacPorts 2.12.6 at
+  `/opt/local`, conda 25.9.1 at `~/miniforge3` with eight environments,
+  two Dakota releases under `/opt/dakota`, Oh My Zsh at `master (0ee67f0)`,
+  `port select` clang at `mp-clang-21`.
+- Verified the 2026-08-20 TeX decision still holds: `pdflatex`, `bibtex`, and
+  `kpsewhich` all resolve to `/Library/TeX/texbin`, and no MacPorts TeX ports
+  are installed.
+- Found two stale `/etc/paths.d` fragments — `10-pmk-global` and
+  `podman-pkg` — pointing at `/pkg/env/global/bin` and `/opt/podman/bin`,
+  neither of which exists.
+
+- Repository initialized on `main` (no remote); `README.md` added.
+- Added `.gitignore` covering macOS and editor detritus.
+- Made the initial commit on `main` and branched `develop` from it as the
+  working trunk; left `main` untagged for now — see `DECISIONS.md`.
+
+**Next:** tag the first release on `main` once there is something substantive
+to version. Then decide what gets captured as data (port manifest, conda
+env exports, `~/.zshrc`, `~/.claude`) and whether the repository gains a
+remote — the two Open aspects in `ARCHITECTURE.md`. The stale `paths.d`
+fragments are removable once their origin is confirmed.
