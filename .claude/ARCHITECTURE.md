@@ -35,19 +35,48 @@ at `/pkg/env/global/bin` and `/opt/podman/bin`, neither of which exists.
 ## Package Manager Isolation
 **Status:** Frozen
 
-Four software sources coexist, each in its own prefix, none permitted to
-shadow another:
+Five software sources coexist, each in its own prefix. Two deliberate
+exceptions aside — the C/C++ toolchain and Dakota's Python tree, both below —
+none shadows another:
 
 | Source | Prefix | Role |
 |--------|--------|------|
-| MacPorts | `/opt/local` | System libraries, compilers, CLI tools |
+| Xcode | `/Applications/Xcode.app` | Apple clang, macOS SDK, `git`, `make` |
+| MacPorts | `/opt/local` | System libraries, LLVM tooling, CLI tools |
 | miniforge3 | `~/miniforge3` | All Python environments |
 | MacTeX | `/Library/TeX` | The entire TeX toolchain |
 | Dakota | `/opt/dakota` | Self-contained, vendor-shipped |
 
+Full Xcode is installed, not merely the Command Line Tools, and
+`xcode-select -p` points at `/Applications/Xcode.app/Contents/Developer`. Its
+`/usr/bin` shims (`git`, `make`, `clang`, `xcrun`) arrive through the system
+`PATH` layer, so MacPorts wins any name collision.
+
 Apple's `/usr/bin/python3` is left untouched and is never installed into.
 `~/.local/bin` holds user-level binaries outside any manager — currently
 `claude` and `sdfast`.
+
+## C/C++ Toolchain
+**Status:** Frozen
+
+Two clangs are installed at the same major version, each for a different job:
+
+- **Apple clang** (`/usr/bin/clang`, currently 21.0.0 / `clang-2100.3.34.2`)
+  is the compiler. It is the build Apple ships, integrated with the macOS SDK
+  (`MacOSX.sdk`, currently 27.0) that `xcrun --show-sdk-path` resolves.
+- **MacPorts LLVM** (`mp-clang-21`, currently 21.1.8) supplies the analysis
+  tools Apple omits — `clang-tidy`, `clang-format`, `clang-doc`.
+
+The MacPorts clang version is selected to track Apple's major version, so
+`port select --set clang mp-clang-<N>` must be re-pointed whenever an Xcode
+update advances Apple's clang. A mismatch there is the usual cause of
+`clang-tidy` disagreeing with the compiler about standard-library headers.
+
+Because `port select` writes its symlinks into `/opt/local/bin`, which
+`~/.zshrc` prepends, a bare `clang` resolves to **MacPorts**, not Apple. Reach
+Apple's deliberately — `/usr/bin/clang`, or `xcrun clang`, which also supplies
+the SDK flags. A build system that calls `cc` or `clang` off `PATH` gets the
+MacPorts compiler unless told otherwise.
 
 ## Python Environments
 **Status:** Frozen
@@ -68,8 +97,8 @@ from it, so switching releases is a one-line edit. Present:
 
 Dakota injects its own Python package tree onto `PYTHONPATH`
 (`share/dakota/Python`, providing `dakota` and `muq`). This crosses the
-otherwise clean miniforge boundary and is the one deliberate exception to the
-isolation above.
+otherwise clean miniforge boundary and is one of the two deliberate exceptions
+to the isolation above.
 
 ## TeX Toolchain
 **Status:** Frozen

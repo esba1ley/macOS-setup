@@ -4,6 +4,23 @@ Why the machine and this repository are arranged as they are. Newest first.
 Entries dated before this file existed were reconstructed from the live
 configuration and are marked as such.
 
+## 2026-09-18 — Compile with Apple clang, analyze with MacPorts LLVM
+**Status:** Accepted (recorded retroactively)
+**Context:** Apple's clang is the build the platform expects — integrated with
+the macOS SDK, matching the system headers and linker — but Apple strips the
+LLVM extras, shipping no `clang-tidy`, `clang-format`, or `clang-doc`. The C
+and C++ conventions require `clang-tidy`.
+**Decision:** Install both. Full Xcode supplies the compiler and SDK; MacPorts
+supplies LLVM at the same major version (`mp-clang-21` against Apple clang 21)
+for the analysis tools.
+**Consequences:** The two must be held at the same major version by hand —
+`port select --set clang mp-clang-<N>` after an Xcode upgrade — or `clang-tidy`
+and the compiler disagree about standard-library headers. Because `port
+select` writes its symlinks into the prepended `/opt/local/bin`, a bare `clang`
+is the MacPorts one; Apple's must be named explicitly. Rejected: MacPorts LLVM
+as the compiler too, which drifts from the SDK Apple ships; and doing without
+`clang-tidy`, which the coding conventions require.
+
 ## 2026-09-18 — Adopt GitFlow branches, defer semantic versioning
 **Status:** Accepted
 **Context:** The standing convention is GitFlow — `main` carrying only tagged

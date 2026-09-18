@@ -26,6 +26,12 @@ Work performed, newest first. Rationale belongs in `DECISIONS.md`.
 - Made the initial commit on `main` and branched `develop` from it as the
   working trunk; left `main` untagged for now — see `DECISIONS.md`.
 
+- Added Xcode as a fifth managed source and recorded the C/C++ toolchain
+  split: Apple clang for compiling, MacPorts LLVM for `clang-tidy` and the
+  other analysis tools. Noted that `port select` symlinks in the prepended
+  `/opt/local/bin` mean a bare `clang` resolves to MacPorts 21.1.8, not Apple
+  clang 21.0.0.
+
 **Next:** tag the first release on `main` once there is something substantive
 to version. Then decide what gets captured as data (port manifest, conda
 env exports, `~/.zshrc`, `~/.claude`) and whether the repository gains a

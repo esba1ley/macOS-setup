@@ -33,9 +33,11 @@ conda env list                    # miniforge environments
 conda list -n esb312 --export     # pinned spec for one environment
 ls /opt/dakota                    # installed Dakota releases
 omz version                       # Oh My Zsh revision
+xcode-select -p                   # active Xcode developer directory
+xcrun --show-sdk-version          # macOS SDK the compiler targets
 ```
 
-Four package managers contribute to `PATH`, so **verify which prefix a tool
+Five software sources contribute to `PATH`, so **verify which prefix a tool
 resolves to before trusting it** — `command -v <tool>`. Where a tool is
 supposed to come from, and why, is in `ARCHITECTURE.md`. Two cases have bitten
 before and are worth checking by reflex:
@@ -43,6 +45,7 @@ before and are worth checking by reflex:
 ```zsh
 command -v pdflatex bibtex kpsewhich   # must all be /Library/TeX/texbin
 command -v python                      # must be ~/miniforge3/envs/...
+command -v clang                       # MacPorts wins; Apple's is `xcrun clang`
 ```
 
 ## Working here
